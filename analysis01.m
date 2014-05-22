@@ -30,7 +30,7 @@ line([2 2],[0,sd2],'Color',[0,1,0],'LineStyle','--');
 line([-3 2],[sd2,sd2],'Color',[0,1,0],'LineStyle','--');
 
 % So, the probability of a value 2 away from zero is about 0.05, and the
-% probabilty of a number 1 away from zero is about .25 2 SD from the mean
+% probabilty of a number 1 away from zero is about .25.
 
 % This is important to keep in mind, because understanding the distribution
 % of the noise is key to having control over how strong the signal you
