@@ -16,18 +16,18 @@ size(X);
 % centered on zero with a standard deviation of one. This means that
 % numbers closer to zero are more likely than numbers that are far from
 % zero (either positive or negative.
-q = -3:.01:3; % ``quantile''
-m = 0;        % mean
-s = 1;        % standard deviation
-plot(q,pdf('norm',q,m,s))
-% 1 SD from the mean
-sd1 = pdf('norm',1,m,s);
-line([1 1],[0,sd1],'Color',[1,0,0],'LineStyle','--');
-line([-3 1],[sd1,sd1],'Color',[1,0,0],'LineStyle','--');
-
-sd2 = pdf('norm',2,m,s);
-line([2 2],[0,sd2],'Color',[0,1,0],'LineStyle','--');
-line([-3 2],[sd2,sd2],'Color',[0,1,0],'LineStyle','--');
+% q = -3:.01:3; % ``quantile''
+% m = 0;        % mean
+% s = 1;        % standard deviation
+% plot(q,pdf('norm',q,m,s))
+% % 1 SD from the mean
+% sd1 = pdf('norm',1,m,s);
+% line([1 1],[0,sd1],'Color',[1,0,0],'LineStyle','--');
+% line([-3 1],[sd1,sd1],'Color',[1,0,0],'LineStyle','--');
+% 
+% sd2 = pdf('norm',2,m,s);
+% line([2 2],[0,sd2],'Color',[0,1,0],'LineStyle','--');
+% line([-3 2],[sd2,sd2],'Color',[0,1,0],'LineStyle','--');
 
 % So, the probability of a value 2 away from zero is about 0.05, and the
 % probabilty of a number 1 away from zero is about .25.
@@ -103,3 +103,19 @@ RowLabels(1:10,1) = 1;
 
 %  Now, give LASSO a shot. Use glmnet() to fit LASSO to your fake data.
 fit = glmnet(X, RowLabels, 'binomial')
+
+
+(X * fit.beta) + repmat(fit.a0, 20,1) > 0   % prediction
+(X * fit.beta) + repmat(fit.a0, 20,1) > 0 % how well does the prediction fits the truth
+(X * fit.beta(:,2)) + fit.a0(2)         % look at individual lamda
+(X * fit.beta(:,2)) + fit.a0(2) > 0     % look at how this lamda fits the truth
+fit.df                                  % How many voxels were selected for each lambda
+sum(abs(fit.beta)>0)                    % same as above
+fit.lambda                              % lambda values
+
+predictions = (X * fit.beta) + repmat(fit.a0, 20,1) > 0   % prediction
+repmat(RowLabels,1,100) == predictions          % compare prediction with truth
+mean(repmat(RowLabels,1,100) == predictions)'   % accuracy
+
+imagesc(fit.beta)       % two ways of visualize voxel selection process
+glmnetPlot(fit)
