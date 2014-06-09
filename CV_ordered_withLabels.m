@@ -1,6 +1,9 @@
 %% Practice generating CV indices (K-folds)
-% This code needs 3 parameters: the number of trails, the number of voxels,
-% and the number of folds of the K-folds cross validation. 
+% This code needs 4 parameters: 
+% 1. number of trials
+% 2. number of voxels
+% 3. number of K (for K-folds CV)
+% 4. number of row labels
 % It outpus the indices for the test set
 clear;clc;
 
@@ -10,12 +13,19 @@ ntrials = 20;
 nvoxels = 10;
 % Please set the number of folds 
 k = 5;
+% It needs to know the number of row labels
+numRL = 2;
 
 
 %% Create the indices matrix
+ind_A = 1:k;
+ind_A = repmat(ind_A', 1, ntrials/k/numRL);
+indices = reshape(ind_A',ntrials/numRL, 1);
+indices = repmat(indices,numRL,1);
+
 A = 1:ntrials;
 A = repmat(A', 1, nvoxels);
-indices = crossvalind('Kfold', ntrials, k);
+
 
 for i = 1:k
 
