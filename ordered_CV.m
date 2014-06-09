@@ -6,8 +6,8 @@ clear;clc;
 
 %% You can set the parameters for CV here
 % Please the dimension of the data sets
-ntrials = 40;
-nvoxels = 20;
+ntrials = 20;
+nvoxels = 10;
 % Please set the number of folds 
 k = 5;
 
@@ -31,8 +31,5 @@ ind_train = find(ind_train);
 
 disp(['This is the ' num2str(i) 'th CV, the test set indices are: '])
 disp(ind_test')   
-
-ind_Xtest = A(ind_test, :);
-ind_Xtrain = A(ind_train, :);
 
 end
