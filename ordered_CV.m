@@ -6,16 +6,20 @@ clear;clc;
 
 %% You can set the parameters for CV here
 % Please the dimension of the data sets
-ntrials = 200;
-nvoxels = 100;
+ntrials = 40;
+nvoxels = 20;
 % Please set the number of folds 
 k = 5;
 
 
 %% Create the indices matrix
+ind_A = 1:k;
+ind_A = repmat(ind_A', 1, ntrials/k);
+indices = reshape(ind_A',ntrials, 1);
+
 A = 1:ntrials;
 A = repmat(A', 1, nvoxels);
-indices = crossvalind('Kfold', ntrials, k);
+
 
 for i = 1:k
 
