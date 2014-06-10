@@ -62,7 +62,6 @@ for i = 1:k
 end
 
 
-
 %% Subset the data set
 Xtest = X(indices_test(:,1) ,:);
 Xtrain = X(indices_train(:,1) ,:);
