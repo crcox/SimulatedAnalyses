@@ -36,7 +36,6 @@ Xtrain1 = X(block + 1: ntrials / numRL, :);
 Xtrain2 = X(ntrials / numRL + block + 1: end, :);
 Xtrain = vertcat(Xtrain1,Xtrain2); 
 
-
 % new labels (2 labels condition)
 rowLabelsTrain = zeros(ntrials - size_test(1),1); 
 rowLabelsTrain(1: (ntrials - size_test(1))/2 ,1) = 1; 
