@@ -5,6 +5,8 @@
 % 3. number of K (for K-folds CV)
 % 4. number of row labels
 % It outpus the indices for the test set
+
+%% Warning: This will clear the work space and variables
 clear;clc;
 
 %% You can set the parameters for CV here
