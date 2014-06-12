@@ -3,7 +3,7 @@ clear;clc;
 
 %% You can set the parameters for CV here
 % Please the dimension of the data sets
-ntrials = 200;
+ntrials = 100;
 nvoxels = 100;
 % Please set the number of folds 
 k = 5;
@@ -11,7 +11,7 @@ k = 5;
 numRL = 2;
 
 block = ntrials /k /numRL;
-size_test = ntrials / k 
+size_test = ntrials / k; 
 
 %% Simulate data
 % Add some noise
@@ -70,7 +70,7 @@ Xtrain = X(indices_train(:,1) ,:);
 % Fit LASSO
 fit = glmnet(Xtrain, rowLabelsTrain, 'binomial');  
 dim_lambda = size(fit.lambda);
-num_lambda = dim_lambda(1);
+num_lambda = dim_lambda(1)
 
 % Results on training set, which can be ignored
 (Xtrain * fit.beta) + repmat(fit.a0, ntrials - size_test,1);   
