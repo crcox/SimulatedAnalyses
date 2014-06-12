@@ -1,5 +1,5 @@
 %% Do a full CV!
-% I plan to do a entire cross validation. The goal is to build a
+% I plan to do a entire cross validation. The goal is do produce a
 % reuseable Lasso with CV for simulated data set. 
 
 %% WARNING: This will clear the work space & variables.
@@ -81,14 +81,12 @@ for j = 1:k
     num_lambda = dim_lambda(1);
     
     % Results on training set, which can be ignored 
-    predic_train = (Xtrain * fit.beta) + repmat(fit.a0, ntrials - size_test,1) > 0;   
-    % Store the results
-    acc_train(:,j) = mean(repmat(rowLabelsTrain,1,num_lambda) == predic_train)';          
+    predic_train = (Xtrain * fit.beta) + repmat(fit.a0, ntrials - size_test,1) > 0;     % Prediction
+    acc_train(:,j) = mean(repmat(rowLabelsTrain,1,num_lambda) == predic_train)';             % Accuracy
 
     % Results on testing set
-    predic_test = (Xtest*fit.beta + repmat(fit.a0, size_test, 1))> 0 ;    
-    % Store the results
-    acc_test(:,j) = mean(repmat(rowLabelsTest,1,num_lambda) == predic_test)';  
+    predic_test = (Xtest*fit.beta + repmat(fit.a0, size_test, 1))> 0 ;    % Predictiion
+    acc_test(:,j) = mean(repmat(rowLabelsTest,1,num_lambda) == predic_test)';  % Accuracy
 
 
 end
@@ -117,7 +115,6 @@ disp(fit.df(find (mean_acc_test == max(mean_acc_test))))
 
 %% Visualizing the results
 
-% Weights Plot
 imagesc(fit.beta)
 xlabel('Trails (lambda)')
 ylabel('Voxels')
@@ -139,9 +136,12 @@ plot(chance_range, 0.5,'k', 'linewidth', 2)
 hold off
 
 
+
+
 title('Accuracy Plot for every lambda values')
 axis([1 num_lambda 0 1])
 xlabel('Trails (lambda)')
 ylabel('Accuracy (chance = 0.5)')
 legend('accuary train', 'accuracy test','max - accuracy test',...
     'Location','SouthEast')
+
