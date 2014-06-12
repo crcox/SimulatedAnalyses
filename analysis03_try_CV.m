@@ -3,13 +3,14 @@ clear;clc
 
 %% Simulate a data set
 ntrials = 200;
-nvoxels = 200;
+nvoxels = 100;
 X = randn(ntrials,nvoxels);   % noise
 size(X);
 
 % Add some signals
 X(1:ntrials/2,1) = X(1:ntrials/2,1) + 1;
 X(ntrials/2 + 1:end,2) = X(ntrials/2 + 1 : end ,2) + 1;
+
 % Add row label
 rowLabels = zeros(ntrials,1);
 rowLabels(1:ntrials /2 ,1) = 1;
@@ -20,7 +21,9 @@ numRL = 2; % number of labels
 % trials 51:60. Train the model on the rest of the voxels. And test the
 % model on the holdout set. 
 
-%% Subset: 1st CV block
+%% Subset: 1st CV block 
+% In this version, I did CV manually 
+
 % K-folds
 k = 5;
 block = ntrials /k /numRL;
@@ -46,30 +49,27 @@ rowLabelsTest(1:size_test(1) / 2 ,1) = 1;
 %% Analysis
 % Fit LASSO
 fit = glmnet(Xtrain, rowLabelsTrain, 'binomial')  
+numLambda = size(fit.lambda);
+disp (['Number of lambda: ' num2str( numLambda(1) )])
+fit.df' ;                                 % How many voxels were selected for each lambda
+fit.lambda  ;                            % lambda values
 
-% Results on training set, which can be ignored
-(Xtrain * fit.beta) + repmat(fit.a0, ntrials - size_test(1),1);     
-% how well does the prediction fits the truth
-((Xtrain * fit.beta) + repmat(fit.a0, ntrials - size_test(1),1)) > 0 
-
-fit.df'                                  % How many voxels were selected for each lambda
-fit.lambda                              % lambda values
-
-predic_train = (Xtrain * fit.beta) + repmat(fit.a0, ntrials - size_test(1),1) > 0   % prediction
-repmat(rowLabelsTrain,1,100) == predic_train          % compare prediction with truth
-acc_train = mean(repmat(rowLabelsTrain,1,100) == predic_train)'   % accuracy
+predic_train = (Xtrain * fit.beta) + repmat(fit.a0, ntrials - size_test(1),1) > 0;   % prediction
+repmat(rowLabelsTrain,1,100) == predic_train;          % compare prediction with truth
+acc_train = mean(repmat(rowLabelsTrain,1,100) == predic_train)';   % accuracy
 
 % glmnetPlot(fit)
 % imagesc(fit.beta)       % two ways of visualize voxel selection process
 
-% Results on testing set
-Xtest*fit.beta + repmat(fit.a0, size_test(1), 1)          % prediction
-predic_test = (Xtest*fit.beta + repmat(fit.a0, size_test(1), 1))> 0     % How well does it fits the truth
-predic_test == repmat(rowLabelsTest,1,100)
-acc_test = mean(repmat(rowLabelsTest,1,100) == predic_test)' 
+% Results on testing set       
+predic_test = (Xtest*fit.beta + repmat(fit.a0, size_test(1), 1))> 0;     % How well does it fits the truth
+acc_test = mean(repmat(rowLabelsTest,1,100) == predic_test)'; 
 
 max_acc = max(acc_test)
 max_ind = find(acc_test == max(acc_test)); % store the indices for the best lambdas
+fit.lambda(max_ind); % The best lambda values 
+fit.df(max_ind) % How many voxels does the lasso used to produce the best performance
+
 
 
 %% Visualizing the results
@@ -83,7 +83,7 @@ plot(chance_range, 0.5,'k', 'linewidth', 2)
 hold off
 
 axis([1 100 0 1])
-legend('accuary train', 'accuracy test','max for accuracy test',...
+legend('accuracy train', 'accuracy test','max for accuracy test',...
     'Location','SouthEast')
 xlabel('Trails')
 ylabel('Accuracy (chance = 0.5)')
