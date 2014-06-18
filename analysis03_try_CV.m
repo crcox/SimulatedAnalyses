@@ -3,7 +3,7 @@ clear;clc
 
 %% Simulate a data set
 ntrials = 200;
-nvoxels = 100;
+nvoxels = 200;
 X = randn(ntrials,nvoxels);   % noise
 size(X);
 
