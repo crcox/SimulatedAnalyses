@@ -8,140 +8,188 @@ rng(1)  % To make the result replicable
 
 %% You can set the parameters for CV here
 % Please the dimension of the data sets
-ntrials = 400;
-nvoxels = 200;
+ntrials = 150;
+nvoxels = 150;
 % Please set the number of folds 
 k = 5;
 % It needs to know the number of row labels
-numRL = 2;
+% ps:Currently, this program can just run normally when there are 2 rowlabels
+rowLabels.num = 2;
 % Some intermedite parameters, for future use
-block = ntrials /k /numRL;
-size_test = ntrials / k ;
+block = ntrials /k /rowLabels.num;
+test.size = ntrials / k ;
+
 
 %% Simulate the data
-% Add some noise
-X = randn(ntrials,nvoxels);   
-size(X);
+
+% Creating the background
+X = zeros(ntrials, nvoxels);
+
 % Add some signals 
-X(1:ntrials/numRL,1) = X(1:ntrials/numRL,1) + 1;
-X(ntrials/numRL + 1:end,2) = X(ntrials/numRL + 1 : end ,2) + 1;
+signal = .5;
+
+X(1:ntrials/rowLabels.num,1) = X(1:ntrials/rowLabels.num,1) + signal;
+X(ntrials/rowLabels.num + 1:end,2) = X(ntrials/rowLabels.num + 1 : end ,2) + signal;
+
+X(1:ntrials/rowLabels.num,3) = X(1:ntrials/rowLabels.num,3) + signal;
+X(ntrials/rowLabels.num + 1:end,4) = X(ntrials/rowLabels.num + 1 : end ,4) + signal;
+
+X(1:ntrials/rowLabels.num,5) = X(1:ntrials/rowLabels.num,5) + signal;
+X(ntrials/rowLabels.num + 1:end,6) = X(ntrials/rowLabels.num + signal : end ,6) + signal;
+
+
+% plot
+figure(1)
+imagesc(X)
+
+% Adding noise 
+rng(1) % Set the seeTo make the result replicable
+X = X + randn(ntrials,nvoxels);   
+size(X);
+
+figure(2)
+imagesc(X)
 
 % Add row label
-rowLabels = zeros(ntrials,1);
-rowLabels(1:ntrials / numRL ,1) = 1;
+rowLabels.whole = zeros(ntrials,1);
+rowLabels.whole(1:ntrials / rowLabels.num ,1) = 1;
 
 % Creates labels for CV 
-rowLabelsTrain = zeros(ntrials - size_test,1); 
-rowLabelsTrain(1: (ntrials - size_test)/numRL ,1) = 1; 
-rowLabelsTest = zeros(size_test,1); 
-rowLabelsTest(1:size_test / numRL ,1) = 1; 
+rowLabels.train = zeros(ntrials - test.size,1); 
+rowLabels.train(1: (ntrials - test.size)/rowLabels.num ,1) = 1; 
+rowLabels.test = zeros(test.size,1); 
+rowLabels.test(1:test.size / rowLabels.num ,1) = 1; 
 
 
 %% Create the indices matrix
-% This part will outputs indices_test & indices_train, which store the
+% This part will outputs test.indices & train.indices, which store the
 % indices for CV
-ind_A = 1:k;
-ind_A = repmat(ind_A', 1, ntrials/k/numRL);
-indices = reshape(ind_A',ntrials/numRL, 1);
-indices = repmat(indices,numRL,1);
-
-A = 1:ntrials;
-A = repmat(A', 1, nvoxels);
+CV.indices = 1:k;
+CV.indices = repmat(CV.indices', 1, ntrials/k/rowLabels.num);
+CV.indices = reshape(CV.indices',ntrials/rowLabels.num, 1);
+CV.indices = repmat(CV.indices,rowLabels.num,1);
 
 for i = 1:k
     % Find the indices for test set & training set
-    ind_test = indices == i;
-    ind_train = ~ ind_test;
+    test.ind = CV.indices == i;
+    train.ind = ~ test.ind;
 
     % Store the indices into a matirx for future use
-    indices_test(:,i) = find(ind_test);  
-    indices_train(:,i) = find(ind_train); 
+    test.indices(:,i) = find(test.ind);  
+    train.indices(:,i) = find(train.ind); 
 
 end
 
+
+%% Fit Lasso
+
+% Initialize some variable to store results
+test.accuracy = NaN(100, k);
+train.accuracy = NaN(100, k);
+
+% Start loop. For each CV, do a lasso.
+for i = 1:k
+    % Subset the data set
+    Xtest = X(test.indices(:,i) ,:);
+    Xtrain = X(train.indices(:,i) ,:);
+
+    % Fit LASSO
+    fit = glmnet(Xtrain, rowLabels.train, 'binomial');  
+
+    % Get the number of lambda
+    lambda.dim = size(fit.lambda);
+    lambda.num = lambda.dim(1);
+    
+    % Results on training set, which can be ignored 
+    train.prediction = (Xtrain * fit.beta) + repmat(fit.a0, ntrials - test.size,1) > 0;   
+    % Store the results
+    train.accuracy(:,i) = mean(repmat(rowLabels.train,1,lambda.dim) == train.prediction)';          
+
+    % Results on testing set
+    test.prediction = (Xtest*fit.beta + repmat(fit.a0, test.size, 1))> 0 ;    
+    % Store the results
+    test.accuracy(:,i) = mean(repmat(rowLabels.test,1,lambda.dim) == test.prediction)';  
+
+end
 
 %% Analysis
 
-% Initialize some variable to store results
-acc_test = NaN(100, k);
-acc_train = NaN(100, k);
-
-
-% Start loop. For each CV, do a lasso.
-for j = 1:k
-    % Subset the data set
-    Xtest = X(indices_test(:,j) ,:);
-    Xtrain = X(indices_train(:,j) ,:);
-
-    % Fit LASSO
-    fit = glmnet(Xtrain, rowLabelsTrain, 'binomial');  
-
-    % Get the number of lambda
-    dim_lambda = size(fit.lambda);
-    num_lambda = dim_lambda(1);
-    
-    % Results on training set, which can be ignored 
-    predic_train = (Xtrain * fit.beta) + repmat(fit.a0, ntrials - size_test,1) > 0;   
-    % Store the results
-    acc_train(:,j) = mean(repmat(rowLabelsTrain,1,num_lambda) == predic_train)';          
-
-    % Results on testing set
-    predic_test = (Xtest*fit.beta + repmat(fit.a0, size_test, 1))> 0 ;    
-    % Store the results
-    acc_test(:,j) = mean(repmat(rowLabelsTest,1,num_lambda) == predic_test)';  
-
-
-end
-
-
 % Find maximun accuracy for each CV
-max_acc = max(acc_test);
+max_acc = max(test.accuracy);
 disp(['The maximun accuracy(with the best lambda) in each CV are:'])
 disp(max_acc')
 
-
 % For each lambda, find average accuracy
-mean_acc_train = mean(acc_train,2); % training set
-mean_acc_test = mean(acc_test,2);   % testing set
+train.meanAccuracy = mean(train.accuracy,2); % training set
+test.meanAccuracy = mean(test.accuracy,2);   % testing set
 % Find the maximum accuracy after taking average
-max_mean_acc = max(mean_acc_test);
+max_mean_acc = max(test.meanAccuracy);
 disp(['Average accuracies for each lambda were computed. The maximun accuracy is '])
 disp(max_mean_acc)
 
 % Find the indices for the maximun accuracy
-find(mean_acc_test == max(mean_acc_test));
+lambda.IndBest =find(test.meanAccuracy == max(test.meanAccuracy));
+% The best lambda values
+fit.lambda(find(test.meanAccuracy == max(test.meanAccuracy)));
+
 % Display how many voxels were used for the best performance
 disp(['How many voxels did the Lasso used, to produce the max_accuracy?'])
-disp(fit.df(find (mean_acc_test == max(mean_acc_test))))
+disp(fit.df(find (test.meanAccuracy == max(test.meanAccuracy))))
+
+
+
+%% Preparation for Iterative Lasso
+
+% Show me the nonzero beta(voxels that have been used) for the best lambda 
+beta.value = fit.beta(:,lambda.IndBest);
+beta.size = size(beta.value);
+
+% for i = 1:beta.size(2)
+%     tabulate(beta.value(:,i));
+% end
+
+
+% Give me the indices for these nonzero beta
+for i = 1: beta.size(2)
+    
+    find( beta.value(:,i) ~= 0 )
+end
+
+
+
 
 
 %% Visualizing the results
 
 % Weights Plot
+figure(3)
 imagesc(fit.beta)
-xlabel('Trails (lambda)')
+xlabel('Lambda')
 ylabel('Voxels')
 title ('Weights plot for every voxels ')
 
+figure(4)
+glmnetPlot(fit)
 
-figure(2)
+% Accuracy Plot
+figure(5)
 % Plot the accracy for the training set, just to compare
-plot(mean_acc_train, 'Linewidth', 2)
+plot(train.meanAccuracy, 'Linewidth', 2)
 hold on 
 % Plot the accuracy for the testing set
-plot(mean_acc_test, 'r', 'Linewidth', 2) 
+plot(test.meanAccuracy, 'r', 'Linewidth', 2) 
 max_xrange = 0: 0.5: 100;
 % Plot the maximun classification accuracy
 plot(max_xrange,max_mean_acc, 'g', 'Linewidth', 2)
 % Plot the chance line
-chance_range = 0: 0.5 : 100;
-plot(chance_range, 0.5,'k', 'linewidth', 2)
+chance.rate = 1 / rowLabels.num;
+chance.range = 0: 0.5 : 100;
+plot(chance.range, chance.rate ,'k', 'linewidth', 2)
 hold off
 
-
 title('Accuracy Plot for every lambda values')
-axis([1 num_lambda 0 1])
-xlabel('Trails (lambda)')
+axis([1 lambda.num 0 1])
+xlabel('Lambda')
 ylabel('Accuracy (chance = 0.5)')
 legend('accuary train', 'accuracy test','max - accuracy test',...
     'Location','SouthEast')
