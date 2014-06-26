@@ -31,7 +31,7 @@ X.raw = zeros(ntrials, nvoxels);
 
 % Add some signals 
 signal = 1;
-disp(['Signal intensity = ' num2str(signal)])
+
 X.raw(1:ntrials/rowLabels.num,1:5) = X.raw(1:ntrials/rowLabels.num,1:5) + signal;
 X.raw(ntrials/rowLabels.num + 1:end,6:10) = X.raw(ntrials/rowLabels.num + 1 : end ,6:10) + signal;
 % plot the signal
@@ -41,7 +41,7 @@ xlabel('Voxels')
 ylabel('Trials')
 
 % Adding noise 
-% rng(1) % Set the seeTo make the result replicable
+rng(1) % Set the seeTo make the result replicable
 noise = 1;
 disp(['Noise intensity = ' num2str(noise)])
 X.raw = X.raw + noise * randn(ntrials,nvoxels);   
@@ -61,6 +61,8 @@ rowLabels.train(1: (ntrials - test.size)/rowLabels.num ,1) = 1;
 rowLabels.test = zeros(test.size,1); 
 rowLabels.test(1:test.size / rowLabels.num ,1) = 1; 
 
+
+disp(['Signal intensity = ' num2str(signal)])
 
 
 %% Generating indices for Outer CV
@@ -88,7 +90,7 @@ for i = 1:k
     % Get the indice for the lambda with the best accuracy 
     lambda.best(i) = find(cvfit(i).lambda == cvfit(i).lambda_min);
     % Plot the cross-validation curve
-%     cvglmnetPlot(cvfit(i));
+    cvglmnetPlot(cvfit(i));
 
     % Set the lambda value
     opts(i) = glmnetSet();
@@ -104,5 +106,3 @@ for i = 1:k
 end
 
 disp(['The mean accuracy is ' num2str(mean(test.accuracy))])
-
-ttest(test.accuracy, 0.5)
