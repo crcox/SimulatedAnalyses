@@ -11,8 +11,8 @@ clear;clc;
 
 %% You can set the parameters for CV here
 % Please the dimension of the data sets
-ntrials = 20;
-nvoxels = 10;
+ntrials = 100;
+nvoxels = 100;
 % Please set the number of folds 
 k = 5;
 % It needs to know the number of row labels
