@@ -77,28 +77,29 @@ end
 
 %% Iterative Lasso
 % Try the 1st iteration
+for i = 1:k
+    % Split the data into training set and testing set 
+    X.test = X.raw(test.indices(:,i) ,:);
+    X.train = X.raw(train.indices(:,i) ,:);
 
-% Split the data into training set and testing set 
-X.test = X.raw(test.indices(:,1) ,:);
-X.train = X.raw(train.indices(:,1) ,:);
+    % Fit cvglmnet
+    cvfit(i) = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', test.indices(1)',5);
+    % Get the indice for the lambda with the best accuracy 
+    find(cvfit(i).lambda == cvfit(i).lambda_min);
+    % Plot the cross-validation curve
+    cvglmnetPlot(cvfit(i));
 
-% Fit cvglmnet
-cvfit = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', test.indices(1)',5)
-% Get the indice for the lambda with the best accuracy 
-find(cvfit.lambda == cvfit.lambda_min);
-% Plot the cross-validation curve
-cvglmnetPlot(cvfit)
+    % Set the lambda value
+    opts(i) = glmnetSet();
+    opts(i).lambda = cvfit(i).lambda_min;
 
-% Set the lambda value
-opts = glmnetSet();
-opts.lambda = cvfit.lambda_min;
+    % Fit glmnet
+    fit(i) = glmnet(X.train, rowLabels.train, 'binomial', opts);
 
-% Fit glmnet
-fit = glmnet(X.train, rowLabels.train, 'binomial', opts)
+    % Evaluate the prediction 
+    test.prediction = (X.test*fit(i).beta + repmat(fit(i).a0, test.size, 1)) > 0 ;  
+    test.accuracy(:,i) = mean(rowLabels.test == test.prediction)'
 
-% Evaluate the prediction 
-test.prediction = (X.test*fit.beta + repmat(fit.a0, test.size, 1)) > 0 ;  
-test.accuracy(:,1) = mean(rowLabels.test == test.prediction)'
+end
 
-
-
+disp(['The mean accuracy is ' num2str(mean(test.accuracy))])
