@@ -4,20 +4,26 @@
 
 %% WARNING: This will clear the work space & variables.
 clear;clc;
-rng(1)  % To make the result replicable
 
 %% You can set the parameters for CV here
 % Please the dimension of the data sets
-ntrials = 150;
-nvoxels = 150;
+ntrials = 200;
+nvoxels = 400;
 % Please set the number of folds 
 k = 5;
 % It needs to know the number of row labels
 % ps:Currently, this program can just run normally when there are 2 rowlabels
 rowLabels.num = 2;
 % Some intermedite parameters, for future use
-block = ntrials /k /rowLabels.num;
+
 test.size = ntrials / k ;
+
+disp ('Parameters: ')
+disp(['Voxels: '  num2str(nvoxels)])
+disp(['trials: '  num2str(ntrials)])
+disp(['K : '  num2str(k)])
+disp(['Number of row labels: ' num2str(rowLabels.num)])
+
 
 
 %% Simulate the data
@@ -26,29 +32,26 @@ test.size = ntrials / k ;
 X = zeros(ntrials, nvoxels);
 
 % Add some signals 
-signal = .5;
+signal = 1;
 
-X(1:ntrials/rowLabels.num,1) = X(1:ntrials/rowLabels.num,1) + signal;
-X(ntrials/rowLabels.num + 1:end,2) = X(ntrials/rowLabels.num + 1 : end ,2) + signal;
-
-X(1:ntrials/rowLabels.num,3) = X(1:ntrials/rowLabels.num,3) + signal;
-X(ntrials/rowLabels.num + 1:end,4) = X(ntrials/rowLabels.num + 1 : end ,4) + signal;
-
-X(1:ntrials/rowLabels.num,5) = X(1:ntrials/rowLabels.num,5) + signal;
-X(ntrials/rowLabels.num + 1:end,6) = X(ntrials/rowLabels.num + signal : end ,6) + signal;
-
+X(1:ntrials/rowLabels.num,1:5) = X(1:ntrials/rowLabels.num,1:5) + signal;
+X(ntrials/rowLabels.num + 1:end,6:10) = X(ntrials/rowLabels.num + 1 : end ,6:10) + signal;
 
 % plot
 figure(1)
 imagesc(X)
+xlabel('Voxels')
+ylabel('Trials')
 
 % Adding noise 
 rng(1) % Set the seeTo make the result replicable
-X = X + randn(ntrials,nvoxels);   
+X = X + 3 * randn(ntrials,nvoxels);   
 size(X);
 
 figure(2)
 imagesc(X)
+xlabel('Voxels')
+ylabel('Trials')
 
 % Add row label
 rowLabels.whole = zeros(ntrials,1);
@@ -103,12 +106,12 @@ for i = 1:k
     % Results on training set, which can be ignored 
     train.prediction = (Xtrain * fit.beta) + repmat(fit.a0, ntrials - test.size,1) > 0;   
     % Store the results
-    train.accuracy(:,i) = mean(repmat(rowLabels.train,1,lambda.dim) == train.prediction)';          
+    train.accuracy(:,i) = mean(repmat(rowLabels.train,[1,lambda.dim]) == train.prediction)';          
 
     % Results on testing set
     test.prediction = (Xtest*fit.beta + repmat(fit.a0, test.size, 1))> 0 ;    
     % Store the results
-    test.accuracy(:,i) = mean(repmat(rowLabels.test,1,lambda.dim) == test.prediction)';  
+    test.accuracy(:,i) = mean(repmat(rowLabels.test,[1,lambda.dim]) == test.prediction)';  
 
 end
 
@@ -116,15 +119,15 @@ end
 
 % Find maximun accuracy for each CV
 max_acc = max(test.accuracy);
-disp(['The maximun accuracy(with the best lambda) in each CV are:'])
-disp(max_acc')
+% disp(['The maximun accuracy(with the best lambda) in each CV block are:'])
+% disp(max_acc')
 
 % For each lambda, find average accuracy
 train.meanAccuracy = mean(train.accuracy,2); % training set
 test.meanAccuracy = mean(test.accuracy,2);   % testing set
 % Find the maximum accuracy after taking average
 max_mean_acc = max(test.meanAccuracy);
-disp(['Average accuracies for each lambda were computed. The maximun accuracy is '])
+disp(['Average accuracies for each lambda were computed. The accuracy for the best lambda is '])
 disp(max_mean_acc)
 
 % Find the indices for the maximun accuracy
@@ -133,30 +136,8 @@ lambda.IndBest =find(test.meanAccuracy == max(test.meanAccuracy));
 fit.lambda(find(test.meanAccuracy == max(test.meanAccuracy)));
 
 % Display how many voxels were used for the best performance
-disp(['How many voxels did the Lasso used, to produce the max_accuracy?'])
+disp(['How many voxels were used, for the max_accuracy?'])
 disp(fit.df(find (test.meanAccuracy == max(test.meanAccuracy))))
-
-
-
-%% Preparation for Iterative Lasso
-
-% Show me the nonzero beta(voxels that have been used) for the best lambda 
-beta.value = fit.beta(:,lambda.IndBest);
-beta.size = size(beta.value);
-
-% for i = 1:beta.size(2)
-%     tabulate(beta.value(:,i));
-% end
-
-
-% Give me the indices for these nonzero beta
-for i = 1: beta.size(2)
-    
-    find( beta.value(:,i) ~= 0 )
-end
-
-
-
 
 
 %% Visualizing the results
@@ -193,3 +174,128 @@ xlabel('Lambda')
 ylabel('Accuracy (chance = 0.5)')
 legend('accuary train', 'accuracy test','max - accuracy test',...
     'Location','SouthEast')
+
+
+
+
+%% Preparation for Iterative Lasso
+
+% Show me the nonzero beta(voxels that have been used) for the best lambda 
+beta.values = fit.beta(:,lambda.IndBest);
+beta.size = size(beta.values);
+
+% Give me the indices for these nonzero beta
+for i = 1: beta.size(2)
+    
+    find( beta.values(:,i) ~= 0 )
+end
+
+voxel.full = 1:400;
+voxel.used = find( beta.values(:,1) ~= 0 );
+voxel.new = setxor(voxel.full,voxel.used);
+
+
+
+
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% %% try 2nd iteration 
+% 
+% X = X(:,voxel.new);
+% Xtest = X(test.indices(:,1), : );
+% Xtrain = X(train.indices(:,1) ,:);
+% 
+% fit = glmnet(Xtrain, rowLabels.train, 'binomial');  
+% 
+% lambda.dim = size(fit.lambda);
+% lambda.num = lambda.dim(1);
+% 
+% % Results on training set, which can be ignored 
+% train.prediction = (Xtrain * fit.beta) + repmat(fit.a0, ntrials - test.size,1) > 0;   
+% % Store the results
+% train.accuracy(:,i) = mean(repmat(rowLabels.train,[1,lambda.dim]) == train.prediction)';          
+% 
+% % Results on testing set
+% test.prediction = (Xtest*fit.beta + repmat(fit.a0, test.size, 1))> 0 ;    
+% % Store the results
+% test.accuracy(:,i) = mean(repmat(rowLabels.test,[1,lambda.dim]) == test.prediction)';  
+% 
+% 
+% % Find maximun accuracy for each CV
+% max_acc = max(test.accuracy);
+% disp(['The maximun accuracy(with the best lambda) in each CV block are:'])
+% disp(max_acc')
+% 
+% % For each lambda, find average accuracy
+% train.meanAccuracy = mean(train.accuracy,2); % training set
+% test.meanAccuracy = mean(test.accuracy,2);   % testing set
+% % Find the maximum accuracy after taking average
+% max_mean_acc = max(test.meanAccuracy);
+% disp(['Average accuracies for each lambda were computed. The accuracy for the best lambda is '])
+% disp(max_mean_acc)
+% 
+% % Find the indices for the maximun accuracy
+% lambda.IndBest =find(test.meanAccuracy == max(test.meanAccuracy));
+% % The best lambda values
+% fit.lambda(find(test.meanAccuracy == max(test.meanAccuracy)));
+% 
+% % Display how many voxels were used for the best performance
+% disp(['How many voxels were used, for the max_accuracy?'])
+% disp(fit.df(find (test.meanAccuracy == max(test.meanAccuracy))))
+% 
+% 
+% 
+% % Weights Plot
+% figure(3)
+% imagesc(fit.beta)
+% xlabel('Lambda')
+% ylabel('Voxels')
+% title ('Weights plot for every voxels ')
+% 
+% figure(4)
+% glmnetPlot(fit)
+% 
+% % Accuracy Plot
+% figure(5)
+% % Plot the accracy for the training set, just to compare
+% plot(train.meanAccuracy, 'Linewidth', 2)
+% hold on 
+% % Plot the accuracy for the testing set
+% plot(test.meanAccuracy, 'r', 'Linewidth', 2) 
+% max_xrange = 0: 0.5: 100;
+% % Plot the maximun classification accuracy
+% plot(max_xrange,max_mean_acc, 'g', 'Linewidth', 2)
+% % Plot the chance line
+% chance.rate = 1 / rowLabels.num;
+% chance.range = 0: 0.5 : 100;
+% plot(chance.range, chance.rate ,'k', 'linewidth', 2)
+% hold off
+% 
+% title('Accuracy Plot for every lambda values')
+% axis([1 lambda.num 0 1])
+% xlabel('Lambda')
+% ylabel('Accuracy (chance = 0.5)')
+% legend('accuary train', 'accuracy test','max - accuracy test',...
+%     'Location','SouthEast')
+% 
+% 
+% 
+% beta.values = fit.beta(:,lambda.IndBest);
+% beta.size = size(beta.values);
+% 
+% % Give me the indices for these nonzero beta
+% 
+%     
+% find( beta.values(:,1) ~= 0 )
+% 
+% 
