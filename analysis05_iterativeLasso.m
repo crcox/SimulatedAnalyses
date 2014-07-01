@@ -5,8 +5,8 @@ clear;clc;
 
 %% You can set the parameters for CV here
 % Please the dimension of the data sets 
-ntrials = 200; % it has to be divisible by K
-nvoxels = 200;
+ntrials = 100; % it has to be divisible by K
+nvoxels = 100;
 % Please set the number of folds 
 k = 5;
 % It needs to know the number of row labels
@@ -31,8 +31,8 @@ X.raw = zeros(ntrials, nvoxels);
 % % Add some signals 
 signal = 1;
 disp(['Signal intensity = ' num2str(signal)])
-X.raw(1:ntrials/rowLabels.num,1:5) = X.raw(1:ntrials/rowLabels.num,1:5) + signal;
-X.raw(ntrials/rowLabels.num + 1:end,6:10) = X.raw(ntrials/rowLabels.num + 1 : end ,6:10) + signal;
+X.raw(1:ntrials/rowLabels.num,1:15) = X.raw(1:ntrials/rowLabels.num,1:15) + signal;
+X.raw(ntrials/rowLabels.num + 1:end,16:30) = X.raw(ntrials/rowLabels.num + 1 : end ,16:30) + signal;
 % plot the signal
 figure(1)
 imagesc(X.raw)
@@ -104,6 +104,8 @@ for i = 1:k
     
     % Find indices for the voxels that have been used
     voxel(i).used = find (fit(i).beta ~= 0);
+    % Find true signals that have been identified
+    voxel(i).signal = sum(voxel(i).used <= 10);
     % Find indices for the voxels that have not been used
     voxel(i).remain = find (fit(i).beta == 0);
     % How many voxels have been used for each iteration
@@ -115,7 +117,10 @@ end
 disp(['The mean accuracy is ' num2str(mean(test.accuracy))])
 % See if it is better than chance 
 ttest(test.accuracy, 0.5)
-
+disp('number of voxels')
+voxel.num
+disp('number of signals')
+voxel.signal
 
 
 %% 1st, try the next iteration 
@@ -146,6 +151,16 @@ for i = 1:k
     % Evaluate the prediction 
     test.prediction(:,i) = (X.test * fit(i).beta + repmat(fit(i).a0, [test.size, 1])) > 0 ;  
     test.accuracy(:,i) = mean(rowLabels.test == test.prediction(:,i))'
+    
+    % Find indices for the voxels that have been used
+    voxel(i).used = find (fit(i).beta ~= 0);
+    % Find true signals that have been identified
+    voxel(i).signal = sum(voxel(i).used <= 10);
+    % Find indices for the voxels that have not been used
+    voxel(i).remain = find (fit(i).beta == 0);
+    % How many voxels have been used for each iteration
+    voxel(i).num = sum(fit(i).beta ~= 0);
+    
 end
 
 % Display the average accuracy for this procedure 
