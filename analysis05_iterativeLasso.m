@@ -65,10 +65,19 @@ rowLabels.test(1:test.size / rowLabels.num ,1) = 1;
 CV.blocks = 1:k;
 CV.blocks = CV.blocks';
 CV.indices = repmat(CV.blocks,[ntrials / k,1]);
+<<<<<<< HEAD
 % Generate indices for CVglmnet
 CV2.blocks = 1:k-1;
 CV2.blocks = CV2.blocks';
 CV2.indices = repmat(CV2.blocks,[ntrials / k,1]);
+=======
+% Generate indices for CV (after the test set was taken out)
+CV2.blocks = 1 : k-1;
+CV2.blocks = CV2.blocks';
+CV2.indices = repmat(CV2.blocks,[ntrials / k,1]);
+
+
+>>>>>>> FETCH_HEAD
 % Creating indices for test set and training set
 for i = 1: k
     test.indices(:,i) = CV.indices == i;
@@ -85,11 +94,15 @@ for i = 1:k
     X.train = X.raw(train.indices(:,i) ,:);
 
     % Fit cvglmnet
+<<<<<<< HEAD
     cvfit(i) = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', CV2.indices', 4);
+=======
+    cvfit(i) = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', CV2.indices',4);
+>>>>>>> FETCH_HEAD
     % Get the indice for the lambda with the best accuracy 
     lambda.best(i) = find(cvfit(i).lambda == cvfit(i).lambda_min);
     % Plot the cross-validation curve
-%     cvglmnetPlot(cvfit(i));
+    cvglmnetPlot(cvfit(i));
 
     % Set the lambda value
     opts(i) = glmnetSet();
