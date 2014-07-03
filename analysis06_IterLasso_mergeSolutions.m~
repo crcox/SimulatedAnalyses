@@ -10,18 +10,17 @@ w = warning ('off','all'); % somehow it returns a lot of warning
 %% You can set the parameters for CV here
 % Please the dimension of the data sets 
 ntrials = 150; % it has to be divisible by K
-nvoxels = 150;
+nvoxels = 120;
 % Please set the number of folds 
 k = 5;
 % It needs to know the number of row labels
 % ps:Currently, this program can just run normally when there are 2 rowlabels
 rowLabels.num = 2;
 
-% Set the strength of the signal 
+% Set the strength of signal and noise
 signal = 1;
 numsignal = 20;
-% Set the strength of the noise
-rng(1) 
+rng(1) % To make the result replicable
 noise = 1.5;
 
 % It is useful to know the size for the testing set
@@ -154,16 +153,6 @@ while true
     
     
     
-    % Store all the solutions 
-    i = 1;
-    for j = 1 + k * (numIter - 1) : k * numIter
-        voxel(j).merge = voxel(i).used;
-        i = i + 1;
-    end
-        
-    
-    
-    
     %% Printing some results
     disp('==============================')
     
@@ -176,7 +165,7 @@ while true
     disp(['The mean accuracy: ' num2str(mean(test.accuracy))]);
     % Test classification accuracy aganist chance 
     [t,p] = ttest(test.accuracy, 0.5);
-    disp(['Result for the t-test: ' num2str(t) ',  P value: ' num2str(p)])
+    disp(['Result for the t-test: ' num2str(t) ' P value: ' num2str()])
     % disp('number of voxels')
     % voxel.num
     % disp('number of signals')
@@ -184,7 +173,6 @@ while true
 
     % Stop iteration, when the decoding accuracy is not better than chance
     if ttest(test.accuracy, 0.5) == 0
-        disp('==============================')
         disp('Iterative Lasso was terminated, as the classification accuracy is at chance level twice.')
         break
 
