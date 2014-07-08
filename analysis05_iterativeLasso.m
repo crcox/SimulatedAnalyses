@@ -15,7 +15,7 @@ rowLabels.num = 2;
 
 % Set the strength of signal and noise
 signal = 1;
-numsignal = 10;
+numsignal = 20;
 rng(1) % To make the result replicable
 noise = 1.5;
 
@@ -30,6 +30,7 @@ disp(['K = '  num2str(k) ' (for K-folds CV)' ])
 disp(['Number of row labels= ' num2str(rowLabels.num)])
 disp(['Signal intensity = ' num2str(signal)])
 disp(['Noise intensity = ' num2str(noise)])
+disp(['Number of signals = ' num2str(numsignal)])
 
 %% Simulate the data
 % Creating the background 
@@ -113,7 +114,7 @@ for i = 1:k
 
     % Evaluate the prediction 
     test.prediction(:,i) = (X.test * fit(i).beta + repmat(fit(i).a0, [test.size, 1])) > 0 ;  
-    test.accuracy(:,i) = mean(rowLabels.test == test.prediction(:,i))'
+    test.accuracy(:,i) = mean(rowLabels.test == test.prediction(:,i))';
     
     % Find indices for the voxels that have been used
     voxel(i).used = find (fit(i).beta ~= 0);
@@ -132,58 +133,55 @@ end
 disp(['The mean accuracy is ' num2str(mean(test.accuracy))])
 % See if it is better than chance 
 ttest(test.accuracy, 0.5)
-disp('number of voxels')
-voxel.num
-disp('number of signals')
-voxel.signal
 
 
-%% 1st, try the next iteration 
 
-% New data set
-for i = 1:k
-    % Re-subset the dataset
-    X.iter = X.raw(:,voxel(i).remain);
-
-    % Split the data into training set and testing set 
-    X.test = X.iter(test.indices(:,i) ,:);
-    X.train = X.iter(train.indices(:,i) ,:);
-
-    % Fit cvglmnet
-    cvfit(i) = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', CV2.indices', 4);
-    % Get the indice for the lambda with the best accuracy 
-    lambda.best(i) = find(cvfit(i).lambda == cvfit(i).lambda_min);
-    % Plot the cross-validation curve
-%     cvglmnetPlot(cvfit(i));
-
-    % Set the lambda value
-    opts(i) = glmnetSet();
-    opts(i).lambda = cvfit(i).lambda_min;
-
-    % Fit glmnet
-    fit(i) = glmnet(X.train, rowLabels.train, 'binomial', opts);
-
-    % Evaluate the prediction 
-    test.prediction(:,i) = (X.test * fit(i).beta + repmat(fit(i).a0, [test.size, 1])) > 0 ;  
-    test.accuracy(:,i) = mean(rowLabels.test == test.prediction(:,i))'
-%     
-%     % Find indices for the voxels that have been used
-%     voxel(i).used = find (fit(i).beta ~= 0);
-%     % Find true signals that have been identified
-%     voxel(i).signal = sum(voxel(i).used <= numsignal);
-%     % Find indices for the voxels that have not been used
-%     voxel(i).remain = find (fit(i).beta == 0);
-%     % How many voxels have been used for each iteration
-%     voxel(i).num = sum(fit(i).beta ~= 0);
-%     
-end
-
-% Display the average accuracy for this procedure 
-disp(['The mean accuracy is ' num2str(mean(test.accuracy))])
-% See if it is better than chance 
-ttest(test.accuracy, 0.5)
-
-disp('number of voxels')
-voxel.num
-disp('number of signals')
-voxel.signal
+% %% 1st, try the next iteration 
+% 
+% % New data set
+% for i = 1:k
+%     % Re-subset the dataset
+%     X.iter = X.raw(:,voxel(i).remain);
+% 
+%     % Split the data into training set and testing set 
+%     X.test = X.iter(test.indices(:,i) ,:);
+%     X.train = X.iter(train.indices(:,i) ,:);
+% 
+%     % Fit cvglmnet
+%     cvfit(i) = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', CV2.indices', 4);
+%     % Get the indice for the lambda with the best accuracy 
+%     lambda.best(i) = find(cvfit(i).lambda == cvfit(i).lambda_min);
+%     % Plot the cross-validation curve
+% %     cvglmnetPlot(cvfit(i));
+% 
+%     % Set the lambda value
+%     opts(i) = glmnetSet();
+%     opts(i).lambda = cvfit(i).lambda_min;
+% 
+%     % Fit glmnet
+%     fit(i) = glmnet(X.train, rowLabels.train, 'binomial', opts);
+% 
+%     % Evaluate the prediction 
+%     test.prediction(:,i) = (X.test * fit(i).beta + repmat(fit(i).a0, [test.size, 1])) > 0 ;  
+%     test.accuracy(:,i) = mean(rowLabels.test == test.prediction(:,i))'
+% %     
+% %     % Find indices for the voxels that have been used
+% %     voxel(i).used = find (fit(i).beta ~= 0);
+% %     % Find true signals that have been identified
+% %     voxel(i).signal = sum(voxel(i).used <= numsignal);
+% %     % Find indices for the voxels that have not been used
+% %     voxel(i).remain = find (fit(i).beta == 0);
+% %     % How many voxels have been used for each iteration
+% %     voxel(i).num = sum(fit(i).beta ~= 0);
+% %     
+% end
+% 
+% % Display the average accuracy for this procedure 
+% disp(['The mean accuracy is ' num2str(mean(test.accuracy))])
+% % See if it is better than chance 
+% ttest(test.accuracy, 0.5)
+% 
+% disp('number of voxels')
+% voxel.num
+% disp('number of signals')
+% voxel.signal
