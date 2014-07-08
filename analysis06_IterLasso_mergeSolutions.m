@@ -19,10 +19,10 @@ rowLabels.num = 2;
 
 % Set the strength of the signal 
 signal = 1;
-numsignal = 20;
+numsignal = 10;
 % Set the strength of the noise
 rng(1) 
-noise = 1.5;
+noise = 2;
 
 % It is useful to know the size for the testing set
 test.size = ntrials / k ;
@@ -109,6 +109,15 @@ numIter = 1;
 
 
 %% Interative Lasso
+
+% Create a matrix to index voxels that have been used (Chris' method)
+used = false(k,nvoxels); 
+
+% Counter for Stopping criterion 
+% ps: the loop stops when t-test insig. twice
+counter = 0;
+
+% stopping 
 while true
     
 % Start 5 folds cross validation
@@ -144,22 +153,27 @@ while true
         % Find indices for the voxels that have been used
         voxel(i).used = find (fit(i).beta ~= 0);
         % Find indices for the voxels that have not been used
-        voxel(i).remain = find (fit(i).beta == 0);    
+        voxel(i).remain = find (fit(i).beta == 0);   
+        
+        % Recording voxels that have been used (chris' method)
+        used( i, ~used(i,:) ) = fit(i).beta ~= 0;
+        
+
         
     end
     
     
-    
-    % Store all the solutions 
-    i = 1;
-    for j = 1 + k * (numIter - 1) : k * numIter
-        voxel(j).solutions = voxel(i).used;
-        i = i + 1;
+    for i = 1:5
+    % Record the results, including 
+    % 1) hit.num: how many voxels have been selected
+    % 2) hit.rate: the porprotion of voxels have been selected 
+    % 3) hit.accuracy: the accuracy for the correspoinding cv block
+        hit.num(numIter,i) = sum(used(i,1:numsignal)); 
+        hit.rate(numIter,i) = sum(used(i,1:numsignal)) / numsignal; 
+        hit.accuracy(numIter, i) = test.accuracy(i);
     end
+
         
-    
-    
-    
     %% Printing some results
     disp('==============================')
     
@@ -172,29 +186,24 @@ while true
     disp(['The mean accuracy: ' num2str(mean(test.accuracy))]);
     % Test classification accuracy aganist chance 
     [t,p] = ttest(test.accuracy, 0.5);
-    disp(['Result for the t-test: ' num2str(t) ',  P value: ' num2str(p)])
-    % disp('number of voxels')
-    % voxel.num
-    % disp('number of signals')
-    % voxel.signal    
+    disp(['Result for the t-test: ' num2str(t) ',  P value: ' num2str(p)]) 
 
     % Stop iteration, when the decoding accuracy is not better than chance
     if ttest(test.accuracy, 0.5) == 0
-        numIter = numIter - 1;
-        disp('==============================')
-        disp('Iterative Lasso was terminated, as the classification accuracy is at chance level.')
-        break
+        counter = counter + 1;
+ 
+        if counter == 2
+        % stop, if t-test = 0 twice
+            disp('==============================')
+            disp('Iterative Lasso was terminated, as the classification accuracy is at chance level.')
+            numIter = numIter - 1;   % adjust iteration number        
+            break
+        else 
+            counter = 0;
+            
+        end
 
     end 
     
-    
 end
-
-
-% merge = zeros(ntrials, numIter * 5)
-% for i = 1 : numIter * 5
-%     
-%     merge(:,i) = voxel(i).solutions
-% 
-% end
 
