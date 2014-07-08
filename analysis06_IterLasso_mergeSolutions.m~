@@ -114,6 +114,7 @@ used = false(k,nvoxels);
 
 
 
+
 %% Interative Lasso
  
 % Infinite loop, until reach stopping crterion
@@ -152,6 +153,10 @@ while true
         test.prediction(:,i) = (X.test * fit(i).beta + repmat(fit(i).a0, [test.size, 1])) > 0 ;  
         test.accuracy(:,i) = mean(rowLabels.test == test.prediction(:,i))';
 
+%         % Find indices for the voxels that have been used
+%         voxel(i).used = find (fit(i).beta ~= 0);
+%         % Find indices for the voxels that have not been used
+%         voxel(i).remain = find (fit(i).beta == 0);   
         
         % Recording voxels that have been used (chris' method)
         used( i, ~used(i,:) ) = fit(i).beta ~= 0;
@@ -197,10 +202,3 @@ while true
     end 
 end
 
-
-plot(hit.rate)
-title ('hit rate')
-
-
-
-%% Final step: pooling the solutions
