@@ -43,7 +43,8 @@ X.raw = zeros(ntrials, nvoxels);
 
 % % Add some signals 
 X.raw(1:ntrials/rowLabels.num,1:numsignal / 2) = X.raw(1:ntrials/rowLabels.num,1:numsignal/2) + signal;
-X.raw(ntrials/rowLabels.num + 1:end, numsignal/2 + 1 : numsignal) = X.raw(ntrials/rowLabels.num + 1 : end ,numsignal/2 + 1 : numsignal) + signal;
+X.raw(ntrials/rowLabels.num + 1:end, numsignal/2 + 1 : numsignal) ...
+    = X.raw(ntrials/rowLabels.num + 1 : end ,numsignal/2 + 1 : numsignal) + signal;
 % plot the signal
 figure(1)
 imagesc(X.raw)
@@ -144,12 +145,7 @@ while true
         voxel(i).used = find (fit(i).beta ~= 0);
         % Find indices for the voxels that have not been used
         voxel(i).remain = find (fit(i).beta == 0);    
-
-%         % How many voxels have been used for each iteration?
-%         voxel(i).num = sum(fit(i).beta ~= 0);    
-%         % How many of them are true signals? (only works for 1st iter, as numsignal doesn't update)
-%         voxel(i).signal = sum(voxel(i).used <= numsignal);
-
+        
     end
     
     
@@ -157,7 +153,7 @@ while true
     % Store all the solutions 
     i = 1;
     for j = 1 + k * (numIter - 1) : k * numIter
-        voxel(j).merge = voxel(i).used;
+        voxel(j).solutions = voxel(i).used;
         i = i + 1;
     end
         
@@ -184,12 +180,21 @@ while true
 
     % Stop iteration, when the decoding accuracy is not better than chance
     if ttest(test.accuracy, 0.5) == 0
+        numIter = numIter - 1;
         disp('==============================')
-        disp('Iterative Lasso was terminated, as the classification accuracy is at chance level twice.')
+        disp('Iterative Lasso was terminated, as the classification accuracy is at chance level.')
         break
 
     end 
     
     
 end
+
+
+% merge = zeros(ntrials, numIter * 5)
+% for i = 1 : numIter * 5
+%     
+%     merge(:,i) = voxel(i).solutions
+% 
+% end
 
