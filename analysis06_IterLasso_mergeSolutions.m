@@ -21,7 +21,7 @@ rowLabels.num = 2;
 signal = 1;
 numsignal = 30;
 % Set the strength of the noise
-rng(1) 
+% rng(1) 
 noise = 1;
 
 % It is useful to know the size for the testing set
@@ -36,6 +36,7 @@ disp(['Number of row labels= ' num2str(rowLabels.num)])
 disp(['Signal intensity = ' num2str(signal)])
 disp(['Noise intensity = ' num2str(noise)])
 disp(['Number of signals = ' num2str(numsignal)])
+disp(' ')
 
 %% Simulate the data
 % Creating the background 
@@ -134,8 +135,6 @@ while true
         % Fit cvglmnet
         cvfit(i) = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', CV2.indices', 4);
 
-        % Get the indice for the lambda with the best accuracy 
-        lambda.best(i) = find(cvfit(i).lambda == cvfit(i).lambda_min);
         % Plot the cross-validation curve
 %         cvglmnetPlot(cvfit(i));
 
@@ -159,13 +158,18 @@ while true
     end
     
     
+    % Take a snapshot, find out which voxels were being used currently
+    USED{numIter} = used;
+    
     % Record the results, including 
-    % 1) hit.num: how many voxels have been selected
+    % 1) hit.num: how many voxels that carrying true signal have been selected
     % 2) hit.rate: the porprotion of voxels have been selected 
     % 3) hit.accuracy: the accuracy for the correspoinding cv block
+    % 4) hit.all : how many voxel that have been selected
     hit.num(numIter,:) = sum(used(:,1:numsignal),2); 
     hit.rate(numIter,:) = sum(used(:,1:numsignal),2) / numsignal; 
     hit.accuracy(numIter, :) = test.accuracy;
+    hit.all(numIter, :) = sum(used,2);
     
         
     %% Printing some results
@@ -175,32 +179,64 @@ while true
     disp(['Iteration number: ' num2str(numIter)]);
     
     % Display the average accuracy for this procedure 
-    disp(['The accuracy for each CV: ' num2str(test.accuracy) ] );
+%     disp(['The accuracy for each CV: ' num2str(test.accuracy) ] );
     disp(['The mean accuracy: ' num2str(mean(test.accuracy))]);
     % Test classification accuracy aganist chance 
     [t,p] = ttest(test.accuracy, 0.5);
     disp(['Result for the t-test: ' num2str(t) ',  P value: ' num2str(p)]) 
 
     % Stop iteration, when the decoding accuracy is not better than chance
-    if ~t
+    if t ~= 1   %  ~t will rise a bug, when t is NaN
         counter = counter + 1;
  
         if counter == 2
         % stop, if t-test = 0 twice
-            disp('==============================')
-            disp('Iterative Lasso was terminated, as the classification accuracy is at chance level twice.')
+            disp(' ')
+            disp('* Iterative Lasso was terminated, as the classification accuracy is at chance level twice.')
+            disp(' ')
             break
         end
         
     else
         counter = 0;
     end 
+
+    
 end
 
 
-plot(hit.rate)
-title ('hit rate')
+% plot(hit.rate)
+% title ('hit rate')
+
 
 
 
 %% Final step: pooling the solutions
+disp('Pooling the solution, and preform the final fit')
+for j = 1:k
+    % Subset: find voxels that were selected 
+    X.final = X.raw( :, USED{numIter - 2}(j,:) );
+
+    for i = 1:k
+        % Split the final data set to testing set and training set 
+        X.test = X.final(test.indices(:,i) ,:);
+        X.train = X.final(train.indices(:,i) ,:);
+
+        % Fit cvglmnet, in order to find the best lambda
+        cvfitFinal = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', CV2.indices', 4);
+
+        % Set the lambda value, using the numerical best
+        opts = glmnetSet();
+        opts.lambda = cvfitFinal.lambda_min;
+        opts.alpha = 0;
+
+        % Fit glmnet 
+        fitFinal = glmnet(X.train, rowLabels.train, 'binomial', opts);
+        
+        % Calculating accuracies
+        final.prediction(:,i) = (X.test * fitFinal.beta + repmat(fitFinal.a0, [test.size, 1])) > 0 ;  
+        final.accuracy(j,i) = mean(rowLabels.test == final.prediction(:,i))';
+    end
+    
+    disp(final.accuracy(j,:))
+end
