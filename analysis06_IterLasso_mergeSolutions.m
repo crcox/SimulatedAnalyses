@@ -6,6 +6,7 @@
 %% WARNING: This will clear the work space & variables.
 clear;clc;
 w = warning ('off','all'); % somehow it returns a lot of warning
+rng(1) % Set the seed (for reproducibility and debugging)
 
 %% You can set the parameters for CV here
 % Please the dimension of the data sets 
@@ -19,9 +20,9 @@ rowLabels.num = 2;
 
 % Set the strength of the signal 
 signal = 1;
-numsignal = 30;
+numsignal = 20;
 % Set the strength of the noise
-% rng(1) 
+
 noise = 1;
 
 % It is useful to know the size for the testing set
@@ -204,11 +205,12 @@ while true
     
 end
 
-
-% plot(hit.rate)
-% title ('hit rate')
-
-
+% Plot the hit rate 
+plot(hit.rate)
+xlabel('Iterations');ylabel('Proportion');
+title ('The Proportion of signal carrying voxels that were selected ');
+axis([1 size(hit.rate(:,1),1) 0 1])
+set(gca,'xtick',1:size(hit.rate(:,1),1))
 
 
 %% Final step: pooling the solutions
