@@ -6,7 +6,7 @@
 %% WARNING: This will clear the work space & variables.
 clear;clc;
 w = warning ('off','all'); % somehow it returns a lot of warning
-rng(1) % Set the seed (for reproducibility and debugging)
+% rng(1) % Set the seed (for reproducibility and debugging)
 
 %% You can set the parameters for CV here
 % Please the dimension of the data sets 
@@ -20,10 +20,10 @@ rowLabels.num = 2;
 
 % Set the strength of the signal 
 signal = 1;
-numsignal = 20;
+numsignal = 50;
 % Set the strength of the noise
 
-noise = 1;
+noise = 2;
 
 % It is useful to know the size for the testing set
 test.size = ntrials / k ;
@@ -205,6 +205,13 @@ while true
     
 end
 
+disp('Here are the accuracies for each iteration: ')
+disp('(row: iteration, colum: CV)')
+disp(hit.accuracy)
+disp('Average:')
+disp(mean(hit.accuracy,2)) 
+
+
 % Plot the hit rate 
 plot(hit.rate)
 xlabel('Iterations');ylabel('Proportion');
@@ -214,7 +221,8 @@ set(gca,'xtick',1:size(hit.rate(:,1),1))
 
 
 %% Final step: pooling the solutions
-disp('Pooling the solution, and preform the final fit')
+disp('Pooling the solution, and preforming the final fit...')
+disp(' ')
 for j = 1:k
     % Subset: find voxels that were selected 
     X.final = X.raw( :, USED{numIter - 2}(j,:) );
@@ -239,6 +247,11 @@ for j = 1:k
         final.prediction(:,i) = (X.test * fitFinal.beta + repmat(fitFinal.a0, [test.size, 1])) > 0 ;  
         final.accuracy(j,i) = mean(rowLabels.test == final.prediction(:,i))';
     end
-    
-    disp(final.accuracy(j,:))
+%     disp(final.accuracy(j,:))
 end
+
+disp('Final accuracies: ')
+disp('(row: CV that just performed, colum: CV block from the iterative Lasso)')
+disp(final.accuracy')
+disp('Average:')
+disp(mean(final.accuracy,2)')
