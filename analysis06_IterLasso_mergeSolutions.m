@@ -6,7 +6,7 @@
 %% WARNING: This will clear the work space & variables.
 clear;clc;
 w = warning ('off','all'); % somehow it returns a lot of warning
-% rng(1) % Set the seed (for reproducibility and debugging)
+rng(1) % Set the seed (for reproducibility and debugging)
 
 %% You can set the parameters for CV here
 % Please the dimension of the data sets 
@@ -20,23 +20,23 @@ rowLabels.num = 2;
 
 % Set the strength of the signal 
 signal = 1;
-numsignal = 50;
+numsignal = 40;
 % Set the strength of the noise
 
-noise = 2;
+noise = 1.5;
 
 % It is useful to know the size for the testing set
 test.size = ntrials / k ;
 
 % Display the parameters
 disp ('Parameters: ')
-disp(['number of Voxels= '  num2str(nvoxels)])
-disp(['number of Trials= '  num2str(ntrials)])
-disp(['K = '  num2str(k) ' (for K-folds CV)' ])
-disp(['Number of row labels= ' num2str(rowLabels.num)])
+disp(['number of Voxels = '  num2str(nvoxels)])
+disp(['number of Trials = '  num2str(ntrials)])
+disp(['K = '  num2str(k) '   (for K-folds CV)' ])
+disp(['Number of row labels = ' num2str(rowLabels.num)])
 disp(['Signal intensity = ' num2str(signal)])
 disp(['Noise intensity = ' num2str(noise)])
-disp(['Number of signals = ' num2str(numsignal)])
+disp(['Number of signal carrying voxels = ' num2str(numsignal)])
 disp(' ')
 
 %% Simulate the data
@@ -221,37 +221,36 @@ set(gca,'xtick',1:size(hit.rate(:,1),1))
 
 
 %% Final step: pooling the solutions
-disp('Pooling the solution, and preforming the final fit...')
+disp('Pooling the solution, and fitting the final model...')
 disp(' ')
-for j = 1:k
+for i = 1:k
     % Subset: find voxels that were selected 
-    X.final = X.raw( :, USED{numIter - 2}(j,:) );
+    X.final = X.raw( :, USED{numIter - 2}(i,:) );
 
-    for i = 1:k
-        % Split the final data set to testing set and training set 
-        X.test = X.final(test.indices(:,i) ,:);
-        X.train = X.final(train.indices(:,i) ,:);
+    % Split the final data set to testing set and training set 
+    X.test = X.final(test.indices(:,i) ,:);
+    X.train = X.final(train.indices(:,i) ,:);
 
-        % Fit cvglmnet, in order to find the best lambda
-        cvfitFinal = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', CV2.indices', 4);
+    % Fit cvglmnet, in order to find the best lambda
+    cvfitFinal = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', CV2.indices', 4);
 
-        % Set the lambda value, using the numerical best
-        opts = glmnetSet();
-        opts.lambda = cvfitFinal.lambda_min;
-        opts.alpha = 0;
+    % Set the lambda value, using the numerical best
+    opts = glmnetSet();
+    opts.lambda = cvfitFinal.lambda_min;
+    opts.alpha = 0;
 
-        % Fit glmnet 
-        fitFinal = glmnet(X.train, rowLabels.train, 'binomial', opts);
-        
-        % Calculating accuracies
-        final.prediction(:,i) = (X.test * fitFinal.beta + repmat(fitFinal.a0, [test.size, 1])) > 0 ;  
-        final.accuracy(j,i) = mean(rowLabels.test == final.prediction(:,i))';
-    end
-%     disp(final.accuracy(j,:))
+    % Fit glmnet 
+    fitFinal = glmnet(X.train, rowLabels.train, 'binomial', opts);
+
+    % Calculating accuracies
+    final.prediction(:,i) = (X.test * fitFinal.beta + repmat(fitFinal.a0, [test.size, 1])) > 0 ;  
+    final.accuracy(i) = mean(rowLabels.test == final.prediction(:,i))';
+
+
 end
 
 disp('Final accuracies: ')
 disp('(row: CV that just performed, colum: CV block from the iterative Lasso)')
-disp(final.accuracy')
-disp('Average:')
-disp(mean(final.accuracy,2)')
+disp(final.accuracy)
+disp('Average: ')
+disp(mean(final.accuracy))
