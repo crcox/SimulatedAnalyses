@@ -1,12 +1,13 @@
-%% Iterative Lasso 
-% This goal for this version is to complete iterative Lasso
-% So it has to be able to merge all solutions 
+%% Iterative LASSO
+% General procedure: Preforming LASSO iteratively until the preformance
+% drops to chance level, and pooling solutions form siginificant
+% iterations, and fiiting the final model using ridge regression.
 
 
 %% WARNING: This will clear the work space & variables.
 clear;clc;
-w = warning ('off','all'); % somehow it returns a lot of warning
-rng(1) % Set the seed (for reproducibility and debugging)
+w = warning ('off','all'); % Somehow, it returns a lot of warning
+rng(1) % Set the seed (for reproducibility and debugging purpose)
 
 %% You can set the parameters for CV here
 % Please the dimension of the data sets 
@@ -20,18 +21,17 @@ rowLabels.num = 2;
 
 % Set the strength of the signal 
 signal = 1;
-numsignal = 40;
+numsignal = 50;
 % Set the strength of the noise
-
-noise = 1.5;
+noise = 1;
 
 % It is useful to know the size for the testing set
 test.size = ntrials / k ;
 
 % Display the parameters
 disp ('Parameters: ')
-disp(['number of Voxels = '  num2str(nvoxels)])
-disp(['number of Trials = '  num2str(ntrials)])
+disp(['Number of Voxels = '  num2str(nvoxels)])
+disp(['Number of Trials = '  num2str(ntrials)])
 disp(['K = '  num2str(k) '   (for K-folds CV)' ])
 disp(['Number of row labels = ' num2str(rowLabels.num)])
 disp(['Signal intensity = ' num2str(signal)])
@@ -47,7 +47,7 @@ X.raw = zeros(ntrials, nvoxels);
 X.raw(1:ntrials/rowLabels.num,1:numsignal / 2) = X.raw(1:ntrials/rowLabels.num,1:numsignal/2) + signal;
 X.raw(ntrials/rowLabels.num + 1:end, numsignal/2 + 1 : numsignal) ...
     = X.raw(ntrials/rowLabels.num + 1 : end ,numsignal/2 + 1 : numsignal) + signal;
-% plot the signal
+% plot the signals
 figure(1)
 imagesc(X.raw)
 xlabel('Voxels');ylabel('Trials');title('Signal');
@@ -206,22 +206,23 @@ while true
 end
 
 disp('Here are the accuracies for each iteration: ')
-disp('(row: iteration, colum: CV)')
+disp('(row: iteration; colum: CV)')
 disp(hit.accuracy)
-disp('Average:')
+disp('Mean accuracies:')
 disp(mean(hit.accuracy,2)) 
 
 
 % Plot the hit rate 
-plot(hit.rate)
-xlabel('Iterations');ylabel('Proportion');
-title ('The Proportion of signal carrying voxels that were selected ');
+plot(hit.rate,'LineWidth',1.5)
+xlabel({'Iterations'; ' ' ; '* Each line indicates a different CV blocks' ; '* the last two iterations were insignificant '});
+ylabel('Proportion (%)');
+title ({'The Proportion of signal carrying voxels that were selected' });
 axis([1 size(hit.rate(:,1),1) 0 1])
 set(gca,'xtick',1:size(hit.rate(:,1),1))
 
 
 %% Final step: pooling the solutions
-disp('Pooling the solution, and fitting the final model...')
+disp('Pooling the solutions, and fitting the final model using Ridge...')
 disp(' ')
 for i = 1:k
     % Subset: find voxels that were selected 
@@ -250,7 +251,7 @@ for i = 1:k
 end
 
 disp('Final accuracies: ')
-disp('(row: CV that just performed, colum: CV block from the iterative Lasso)')
+disp('(row: CV that just performed; colum: CV block from the iterative Lasso)')
 disp(final.accuracy)
-disp('Average: ')
+disp('Mean accuracy: ')
 disp(mean(final.accuracy))
