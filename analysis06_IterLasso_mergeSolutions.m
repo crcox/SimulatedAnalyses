@@ -23,7 +23,7 @@ rowLabels.num = 2;
 signal = 1;
 numsignal = 50;
 % Set the strength of the noise
-noise = 1;
+noise = 3;
 
 % It is useful to know the size for the testing set
 test.size = ntrials / k ;
@@ -50,14 +50,16 @@ X.raw(ntrials/rowLabels.num + 1:end, numsignal/2 + 1 : numsignal) ...
 % plot the signals
 figure(1)
 imagesc(X.raw)
-xlabel('Voxels');ylabel('Trials');title('Signal');
+xlabel('Voxels', 'FontSize',12);ylabel('Trials', 'FontSize',12);
+title('Signal', 'FontSize',12);
 
 % Adding noise 
 X.raw = X.raw + noise * randn(ntrials,nvoxels);   
 % plot the noise + signal
 figure(2)
 imagesc(X.raw)
-xlabel('Voxels');ylabel('Trials');title('Signal & Noise')
+xlabel('Voxels', 'FontSize',12);ylabel('Trials', 'FontSize',12);
+title('Signal & Noise', 'FontSize',12)
 
 % Create row labels
 rowLabels.whole = zeros(ntrials,1);
@@ -213,10 +215,14 @@ disp(mean(hit.accuracy,2))
 
 
 % Plot the hit rate 
+figure(3)
 plot(hit.rate,'LineWidth',1.5)
-xlabel({'Iterations'; ' ' ; '* Each line indicates a different CV blocks' ; '* the last two iterations were insignificant '});
-ylabel('Proportion (%)');
-title ({'The Proportion of signal carrying voxels that were selected' });
+xlabel({'Iterations'; ' ' ;...
+    '* Each line indicates a different CV blocks' ;...
+    '* the last two iterations were insignificant '},...
+    'FontSize',12);
+ylabel('Proportion (%)', 'FontSize',12);
+title ({'The Proportion of signal carrying voxels that were selected' }, 'FontSize',12);
 axis([1 size(hit.rate(:,1),1) 0 1])
 set(gca,'xtick',1:size(hit.rate(:,1),1))
 
