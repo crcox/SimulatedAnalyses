@@ -1,15 +1,18 @@
 clear; 
-rng(1)
+rng(2);
 
-
-limit = 20;
+%% Set parameters here
+iteration = 100; 
 signal = 0;
+
+textprogressbar('calculating: ');
 
 for j = 1:4
     signal = signal + 0.25;
     
 
-    for i = 1:limit
+    for i = 1:iteration
+        textprogressbar(sub2ind([iteration,4],i,j));
         %% Setup
         X.all = randn(100,200);
 
@@ -44,6 +47,12 @@ for j = 1:4
         X.test = X.test(:,fitObj_lasso.beta ~= 0);
         X.train = X.train(:,fitObj_lasso.beta ~= 0);
 
+        if size(X.train,2) == 0
+            err.glm(j,i) = mean(Y.test==0);
+            err.RIDGE(j,i) = mean(Y.test==0);
+            continue
+        end
+
 
         %% GLM 
         temp = glmfit(X.train,Y.train,'binomial');
@@ -75,14 +84,15 @@ mean(err.LASSO,2)
 mean(err.glm,2)
 mean(err.RIDGE,2)
 
-plot([0.25:0.25:1],mean(err.LASSO,2), 'b' )
+plot([0.25:0.25:1],mean(err.LASSO,2), 'b','LineWidth',1.5 )
 hold on 
-plot([0.25:0.25:1],mean(err.glm,2), 'g')
-plot([0.25:0.25:1],mean(err.RIDGE,2), 'r')
+plot([0.25:0.25:1],mean(err.glm,2), 'g','LineWidth',1.5)
+plot([0.25:0.25:1],mean(err.RIDGE,2), 'r','LineWidth',1.5)
 
 legend('LASSO', 'GLM','RIDGE',...
     'Location','NorthEast')
-
-xlabel('Strength of the Signal');ylabel('Error');
+title('Comparing Lasso, ridge & glm','FontSize',12)
+xlabel('Strength of the Signal','FontSize',12);
+ylabel('Error','FontSize',12);
 set(gca,'xtick',0.25:0.25:1)
 hold off
