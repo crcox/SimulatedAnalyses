@@ -1,5 +1,4 @@
-function [ ntrials, nvoxels, k, signal, noise, rowLabels,numsignal, testSize, X ] =...
-    simData( ntrials, nvoxels, k, signal, noise, numRowLabels, numsignal )
+function [ rowLabels, testSize, X ] = simData( ntrials, nvoxels, k, signal, numsignal )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 %% You can set the parameters for CV here
@@ -23,14 +22,14 @@ rowLabels.num = 2;
 testSize = ntrials / k ;
 
 % Display the parameters
-disp ('Parameters: ')
-disp(['number of Voxels= '  num2str(nvoxels)])
-disp(['number of Trials= '  num2str(ntrials)])
-disp(['K = '  num2str(k) ' (for K-folds CV)' ])
-disp(['Number of row labels= ' num2str(rowLabels.num)])
-disp(['Signal intensity = ' num2str(signal)])
-disp(['Noise intensity = ' num2str(noise)])
-disp(['Number of signals = ' num2str(numsignal)])
+% disp ('Parameters: ')
+% disp(['number of Voxels= '  num2str(nvoxels)])
+% disp(['number of Trials= '  num2str(ntrials)])
+% disp(['K = '  num2str(k) ' (for K-folds CV)' ])
+% disp(['Number of row labels= ' num2str(rowLabels.num)])
+% disp(['Signal intensity = ' num2str(signal)])
+% disp(['Noise intensity = ' num2str(1)])
+% disp(['Number of signals = ' num2str(numsignal)])
 
 
 
@@ -43,13 +42,15 @@ X.raw(1:ntrials/rowLabels.num,1:numsignal / 2) = X.raw(1:ntrials/rowLabels.num,1
 X.raw(ntrials/rowLabels.num + 1:end, numsignal/2 + 1 : numsignal) = X.raw(ntrials/rowLabels.num + 1 : end ,numsignal/2 + 1 : numsignal) + signal;
 % plot the signal
 figure(1)
+subplot(1,2,1);
 imagesc(X.raw)
 xlabel('Voxels');ylabel('Trials');title('Signal');
 
 % Adding noise 
-X.raw = X.raw + noise * randn(ntrials,nvoxels);   
+X.raw = X.raw + randn(ntrials,nvoxels);   
+
 % plot the noise + signal
-figure(2)
+subplot(1,2,2);
 imagesc(X.raw)
 xlabel('Voxels');ylabel('Trials');title('Signal & Noise')
 
