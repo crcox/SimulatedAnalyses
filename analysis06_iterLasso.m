@@ -20,10 +20,10 @@ k = 5;
 rowLabels.num = 2;
 
 % Set the strength of the signal 
-signal = 1;
+signal = .33;
 numsignal = 50;
 % Set the strength of the noise
-noise = 3;
+noise = 1;
 
 % It is useful to know the size for the testing set
 test.size = ntrials / k ;
@@ -136,27 +136,36 @@ while true
         X.train = X.iter(train.indices(:,i) ,:);
 
         % Fit cvglmnet
-        cvfit(i) = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', CV2.indices', 4);
+        cvfit = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', CV2.indices', 4);
 
         % Plot the cross-validation curve
 %         cvglmnetPlot(cvfit(i));
 
         % Set the lambda value, using the numerical best
-        opts(i) = glmnetSet();
-        opts(i).lambda = cvfit(i).lambda_min;
+        opts = glmnetSet();
+        opts.alpha = 1;
+        opts.lambda = cvfit.lambda_min;
 
         % Fit glmnet
-        fit(i) = glmnet(X.train, rowLabels.train, 'binomial', opts);
+        fit = glmnet(X.train, rowLabels.train, 'binomial', opts);
 
         % Evaluate the prediction 
         %   test.prediction = X.test * ß (weight) + a (intercept)
 %         bsxfun(@plus, X.test * fit(i).beta, fit(i).a0) > 0 ;
-        test.prediction(:,i) = (X.test * fit(i).beta + repmat(fit(i).a0, [test.size, 1])) > 0 ;  
+        test.prediction(:,i) = (X.test * fit.beta + repmat(fit.a0, [test.size, 1])) > 0 ;  
         test.accuracy(:,i) = mean(rowLabels.test == test.prediction(:,i))';
 
         
         % Recording voxels that have been used (chris' method)
-        used( i, ~used(i,:) ) = fit(i).beta ~= 0;
+        used( i, ~used(i,:) ) = fit.beta ~= 0;
+        
+        
+        % Releveling
+        opts.alpha = 0;
+        fitRidge = glmnet(X.train, rowLabels.train, 'binomial', opts);
+        r.prediction(:,i) = (X.test * fitRidge.beta + repmat(fitRidge.a0, [test.size, 1])) > 0 ;  
+        r.accuracy(:,i) = mean(rowLabels.test == r.prediction(:,i))';
+        
         
     end
     
@@ -173,6 +182,7 @@ while true
     hit.rate(numIter,:) = sum(used(:,1:numsignal),2) / numsignal; 
     hit.accuracy(numIter, :) = test.accuracy;
     hit.all(numIter, :) = sum(used,2);
+    ridge.accuracy(numIter, :) = r.accuracy;
     
         
     %% Printing some results
@@ -261,3 +271,7 @@ disp('(row: CV that just performed; colum: CV block from the iterative Lasso)')
 disp(final.accuracy)
 disp('Mean accuracy: ')
 disp(mean(final.accuracy))
+
+results.lasso_err = mean(- (hit.accuracy(1,:) - 1),2);
+results.ridge_err = mean(- (ridge.accuracy(1,:) - 1),2);
+

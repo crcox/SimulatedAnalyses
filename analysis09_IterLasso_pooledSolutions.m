@@ -7,7 +7,7 @@
 %% WARNING: This will clear the work space & variables.
 clear;clc;
 w = warning ('off','all'); % Somehow, it returns a lot of warning
-rng(1) % Set the seed (for reproducibility and debugging purpose)
+% rng(1) % Set the seed (for reproducibility and debugging purpose)
 
 %% You can set the parameters for CV here
 % Please the dimension of the data sets 
@@ -20,10 +20,8 @@ k = 5;
 rowLabels.num = 2;
 
 % Set the strength of the signal 
-signal = .66;
+signal = .33;
 numsignal = 50;
-% Set the strength of the noise
-% noise = 1;
 
 % It is useful to know the size for the testing set
 test.size = ntrials / k ;
@@ -46,19 +44,19 @@ disp(' ')
 %% Iterative Lasso
 results = IterativeLasso(X,rowLabels,CV,CV2,numsignal,1);
 
+limit = 10
+counter = 0;
+error.lasso = zeros(1,limit);
+error.ridge = zeros(1,limit);
 
-% counter = 0;
-% error.lasso = zeros(1,30);
-% error.ridge = zeros(1,30);
-% 
-% while counter <= 30
-%     results = IterativeLasso(X,rowLabels,CV,CV2,numsignal,1);
-%     if results.n_sig_iter == 1
-%         counter = counter + 1;
-%         error.lasso(counter) = results.lasso_err;
-%         error.ridge(counter) = results.ridge_err;
-%     end
-% end
+while counter <= limit 
+    results = IterativeLasso(X,rowLabels,CV,CV2,numsignal,1);
+    if results.n_sig_iter == 1
+        counter = counter + 1;
+        error.lasso(counter) = results.lasso_err;
+        error.ridge(counter) = results.ridge_err;
+    end
+end
 
 
 
