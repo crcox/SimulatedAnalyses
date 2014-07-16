@@ -83,11 +83,12 @@ end
 mean(err.LASSO,2)
 mean(err.glm,2)
 mean(err.RIDGE,2)
+x = [0.25:0.25:1];
 
-plot([0.25:0.25:1],mean(err.LASSO,2), 'b','LineWidth',1.5 )
+plot(x,mean(err.LASSO,2), 'b','LineWidth',1.5 )
 hold on 
-plot([0.25:0.25:1],mean(err.glm,2), 'g','LineWidth',1.5)
-plot([0.25:0.25:1],mean(err.RIDGE,2), 'r','LineWidth',1.5)
+plot(x,mean(err.glm,2), 'g','LineWidth',1.5)
+plot(x,mean(err.RIDGE,2), 'r','LineWidth',1.5)
 
 legend('LASSO', 'GLM','RIDGE',...
     'Location','NorthEast')
