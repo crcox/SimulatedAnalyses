@@ -1,4 +1,4 @@
-function [ rowLabels, testSize, X ] = simData( ntrials, nvoxels, k, signal, numsignal )
+function [ rowLabels, testSize, X ] = simData( ntrials, nvoxels, k, signal, noise, numsignal )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 %% You can set the parameters for CV here
@@ -47,7 +47,7 @@ imagesc(X.raw)
 xlabel('Voxels');ylabel('Trials');title('Signal');
 
 % Adding noise 
-X.raw = X.raw + randn(ntrials,nvoxels);   
+X.raw = X.raw + noise * randn(ntrials,nvoxels);   
 
 % plot the noise + signal
 subplot(1,2,2);
