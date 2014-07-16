@@ -1,4 +1,4 @@
-function results = IterativeLasso(X,rowLabels,CV,CV2,numsignal,STOPPING_RULE)
+function [results, hit , final, used] = IterativeLasso(X,rowLabels,CV,CV2,numsignal,STOPPING_RULE)
     %% Prepare for Iterative Lasso
     nvoxels = size(X.raw,2);
     k = max(CV.blocks);
@@ -51,7 +51,6 @@ function results = IterativeLasso(X,rowLabels,CV,CV2,numsignal,STOPPING_RULE)
 
             % Evaluate the prediction 
             %   test.prediction = X.test * ß (weight) + a (intercept)
-%             test.prediction = bsxfun(@plus, X.test * fit.beta, fit.a0) > 0 ;
             test.prediction(:,i) = (X.test * fit.beta + repmat(fit.a0, [test.size, 1])) > 0 ;  
             test.accuracy(:,i) = mean(rowLabels.test == test.prediction(:,i))';
 
@@ -72,15 +71,29 @@ function results = IterativeLasso(X,rowLabels,CV,CV2,numsignal,STOPPING_RULE)
         USED{numIter} = used;
 
         % Record the results, including 
-        % 1) hit.num: how many voxels that carrying true signal have been selected
-        % 2) hit.rate: the porprotion of voxels have been selected 
-        % 3) hit.accuracy: the accuracy for the correspoinding cv block
-        % 4) hit.all : how many voxel that have been selected
-        hit.num(numIter,:) = sum(used(:,1:numsignal),2); 
+        % 1) hit.numSignal: how many voxels that carrying true signal have been selected
+        hit.numSignal(numIter,:) = sum(used(:,1:numsignal),2); 
+        % 2) hit.rate: the porprotion of voxels have been selected         
         hit.rate(numIter,:) = sum(used(:,1:numsignal),2) / numsignal; 
+        % 3) hit.accuracy: the accuracy for the correspoinding cv block        
         hit.accuracy(numIter, :) = test.accuracy;
+        % 4) hit.all : how many voxel that have been selected (cumulative)        
         hit.all(numIter, :) = sum(used,2);
-        ridge.accuracy(numIter, :) = r.accuracy;
+        % 5) hit.num_current: how many voxel that have been selected in the
+        % current iteration
+        if numIter == 1
+            hit.num_current(1,:) = hit.all(1,:);
+        else
+            hit.num_current(numIter,:) = hit.all(numIter,: ) - hit.all(numIter - 1,:) ;
+        end
+        % 6) hit.rate_current: how many signal-carrying voxels were
+        % selected in current iteration
+        hit.rate_current(1,:) = hit.rate(1,:);
+        for i = 2:size(hit.rate,1)
+            hit.rate_current(i,:) = hit.rate(i,:) - hit.rate(i-1,:);
+        end
+        % 5) hit.ridgeAccuracy: the accuracy for ridge regression
+        hit.ridgeAccuracy(numIter, :) = r.accuracy;       
 
 
         %% Printing some results
@@ -101,6 +114,12 @@ function results = IterativeLasso(X,rowLabels,CV,CV2,numsignal,STOPPING_RULE)
         else
             disp(['Result for the t-test: ' num2str(t) ',  P = ' num2str(p)]) 
         end
+        
+        % how many voxel were selected in the current iteration: 
+        disp('voxels that were selected in the current iteration:')
+        disp(hit.num_current(numIter,:))
+        disp('voxels selected (cumulative): ')
+        disp(hit.all(numIter,:))
         
         % Stop iteration, when the decoding accuracy is not better than chance
         if t ~= 1   %  ~t will rise a bug, when t is NaN
@@ -128,19 +147,52 @@ function results = IterativeLasso(X,rowLabels,CV,CV2,numsignal,STOPPING_RULE)
     disp(mean(hit.accuracy,2)) 
 
 
-    % Plot the hit rate 
+    % Plot the hit.rate 
     figure(3)
+    subplot(1,2,1)
     plot(hit.rate,'LineWidth',1.5)
     xlabel({'Iterations'; ' ' ;...
         '* Each line indicates a different CV blocks' ;...
         '* the last two iterations were insignificant '},...
         'FontSize',12);
-    ylabel('Proportion (%)', 'FontSize',12);
-    title ({'The Proportion of signal carrying voxels that were selected' }, 'FontSize',12);
+    ylabel('Proportion of signal-carrying voxels (%)', 'FontSize',12);
+    title ({'The Proportion of signal carrying voxels that were selected over time' }, 'FontSize',12);
     axis([1 size(hit.rate(:,1),1) 0 1])
     set(gca,'xtick',1:size(hit.rate(:,1),1))
+    
+    % plot the hit.rate_current
+    subplot(1,2,2)
+    plot(hit.rate_current)
+        xlabel({'Iterations'; ' ' ;...
+        '* Each line indicates a different CV blocks' ;...
+        '* the last two iterations were insignificant '},...
+        'FontSize',12);
+    title ({'The Proportion of signal carrying voxels that were selected in current iteration' }, 'FontSize',12);
+    axis([1 size(hit.rate_current(:,1),1) 0 1])
+    set(gca,'xtick',1:size(hit.rate(:,1),1))
 
-
+    % plot the number of voxels selected
+    figure(4)
+    subplot(1,2,1)
+    plot(hit.all,'LineWidth',1.5)
+    xlabel({'Iterations'; ' ' ;...
+        '* Each line indicates a different CV blocks' ;...
+        '* the last two iterations were insignificant '},...
+        'FontSize',12);
+    ylabel('Number of voxels', 'FontSize',12);
+    title ({'The number of voxels that were selected that were selected (cumulative)' }, 'FontSize',12);
+    set(gca,'xtick',1:size(hit.rate(:,1),1))
+    
+    subplot(1,2,2)
+    plot(hit.num_current,'LineWidth',1.5)
+    xlabel({'Iterations'; ' ' ;...
+        '* Each line indicates a different CV blocks' ;...
+        '* the last two iterations were insignificant '},...
+        'FontSize',12);
+    ylabel('Number of voxels', 'FontSize',12);
+    title ({'The number of voxels that were selected in single iteration' }, 'FontSize',12);
+    set(gca,'xtick',1:size(hit.rate(:,1),1))
+    
     %% Final step: pooling the solutions
     disp('Pooling the solutions, and fitting the final model using Ridge...')
     disp(' ')
@@ -179,7 +231,7 @@ function results = IterativeLasso(X,rowLabels,CV,CV2,numsignal,STOPPING_RULE)
     %% Packaging results
     results.n_sig_iter = numSig;
     results.lasso_err = mean(- (hit.accuracy(1,:) - 1),2);
-    results.ridge_err = mean(- (ridge.accuracy(1,:) - 1),2);
+    results.ridge_err = mean(- (hit.ridgeAccuracy(1,:) - 1),2);
     
 end
 
