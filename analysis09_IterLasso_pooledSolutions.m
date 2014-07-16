@@ -7,11 +7,11 @@
 %% WARNING: This will clear the work space & variables.
 clear;clc;
 w = warning ('off','all'); % Somehow, it returns a lot of warning
-% rng(1) % Set the seed (for reproducibility and debugging purpose)
+rng(1) % Set the seed (for reproducibility and debugging purpose)
 
 %% You can set the parameters for CV here
 % Please the dimension of the data sets 
-ntrials = 150; % it has to be divisible by K
+ntrials = 150; % It has to be divisble by k
 nvoxels = 150;
 % Please set the number of folds 
 k = 5;
@@ -19,9 +19,13 @@ k = 5;
 % ps:Currently, this program can just run normally when there are 2 rowlabels
 rowLabels.num = 2;
 
-% Set the strength of the signal 
-signal = .33;
+% Set the strength of the signal & noise
+signal = 1;
+noise = 1;
+
+% Set the number of signal-carrying voxel
 numsignal = 50;
+
 
 % It is useful to know the size for the testing set
 test.size = ntrials / k ;
@@ -33,30 +37,38 @@ disp(['Number of Trials = '  num2str(ntrials)])
 disp(['K = '  num2str(k) '   (for K-folds CV)' ])
 disp(['Number of row labels = ' num2str(rowLabels.num)])
 disp(['Signal intensity = ' num2str(signal)])
-disp(['Noise intensity = ' num2str(1)])
+disp(['Noise intensity = ' num2str(noise)])
 disp(['Number of signal carrying voxels = ' num2str(numsignal)])
 disp(' ')
 
 %% Supporting functions
-[ rowLabels, testSize, X ] = simData( ntrials, nvoxels, k, signal, numsignal);
+[ rowLabels, testSize, X ] = simData( ntrials, nvoxels, k, signal, noise, numsignal);
 [ CV, CV2 ] = CVindices( k, ntrials );
 
 %% Iterative Lasso
-results = IterativeLasso(X,rowLabels,CV,CV2,numsignal,1);
+[results, hit, final, used] = IterativeLasso(X,rowLabels,CV,CV2,numsignal,2);
 
-limit = 10
-counter = 0;
-error.lasso = zeros(1,limit);
-error.ridge = zeros(1,limit);
 
-while counter <= limit 
-    results = IterativeLasso(X,rowLabels,CV,CV2,numsignal,1);
-    if results.n_sig_iter == 1
-        counter = counter + 1;
-        error.lasso(counter) = results.lasso_err;
-        error.ridge(counter) = results.ridge_err;
-    end
-end
+
+
+%% Iterative (Iterative Lasso)!
+
+% limit = 10
+% counter = 0;
+% error.lasso = zeros(1,limit);
+% error.ridge = zeros(1,limit);
+% 
+% while counter <= limit 
+%     results = IterativeLasso(X,rowLabels,CV,CV2,numsignal,1);
+%     if results.n_sig_iter == 1
+%         counter = counter + 1;
+%         error.lasso(counter) = results.lasso_err;
+%         error.ridge(counter) = results.ridge_err;
+%     end
+% end
+
+
+
 
 
 
