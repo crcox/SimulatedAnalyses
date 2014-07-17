@@ -35,19 +35,22 @@ function [results, hit , final, used] = IterativeLasso(X,rowLabels,CV,CV2,numsig
             % Split the data into training & testing set 
             X.test = X.iter(test.indices(:,i) ,:);
             X.train = X.iter(train.indices(:,i) ,:);
-
+            
+            % Use Lasso
+            opts_lasso = glmnetSet();
+            opts_lasso.alpha = 1;
+            
             % Fit cvglmnet
-            cvfit = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', CV2.indices', 4);
+            cvfit = cvglmnet (X.train, rowLabels.train, 'binomial', opts_lasso,'class',4, CV2.indices');
 
             % Plot the cross-validation curve
     %         cvglmnetPlot(cvfit(i));
 
             % Set the lambda value, using the numerical best
-            opts = glmnetSet();
-            opts.lambda = cvfit.lambda_min;
+            opts_lasso.lambda = cvfit.lambda_min;
 
             % Fit glmnet
-            fit = glmnet(X.train, rowLabels.train, 'binomial', opts);
+            fit = glmnet(X.train, rowLabels.train, 'binomial', opts_lasso);
 
             % Evaluate the prediction 
             %   test.prediction = X.test * ß (weight) + a (intercept)
@@ -55,8 +58,12 @@ function [results, hit , final, used] = IterativeLasso(X,rowLabels,CV,CV2,numsig
             test.accuracy(:,i) = mean(rowLabels.test == test.prediction(:,i))';
 
             % Releveling
-            opts.alpha = 0;
-            fitRidge = glmnet(X.train, rowLabels.train, 'binomial', opts);
+            opts_ridge = glmnetSet();            
+            opts_ridge.alpha = 0;
+            cvfit_ridge = cvglmnet (X.train, rowLabels.train, 'binomial',opts_ridge ,'class',4, CV2.indices');
+            
+            opts_ridge.lambda = cvfit_ridge.lambda_min;
+            fitRidge = glmnet(X.train, rowLabels.train, 'binomial', opts_ridge);
             r.prediction(:,i) = (X.test * fitRidge.beta + repmat(fitRidge.a0, [test.size, 1])) > 0 ;  
             r.accuracy(:,i) = mean(rowLabels.test == r.prediction(:,i))';
             
@@ -92,7 +99,7 @@ function [results, hit , final, used] = IterativeLasso(X,rowLabels,CV,CV2,numsig
         for i = 2:size(hit.rate,1)
             hit.rate_current(i,:) = hit.rate(i,:) - hit.rate(i-1,:);
         end
-        % 5) hit.ridgeAccuracy: the accuracy for ridge regression
+        % 7) hit.ridgeAccuracy: the accuracy for ridge regression
         hit.ridgeAccuracy(numIter, :) = r.accuracy;       
 
 
@@ -105,6 +112,7 @@ function [results, hit , final, used] = IterativeLasso(X,rowLabels,CV,CV2,numsig
         % Display the average accuracy for this procedure 
     %     disp(['The accuracy for each CV: ' num2str(test.accuracy) ] );
         disp(['The mean accuracy: ' num2str(mean(test.accuracy))]);
+        disp(['The releveling accuracy: ' num2str(mean(r.accuracy))]);
         % Test classification accuracy aganist chance 
         [t,p] = ttest(test.accuracy, 0.5);
         
@@ -145,6 +153,8 @@ function [results, hit , final, used] = IterativeLasso(X,rowLabels,CV,CV2,numsig
     disp(hit.accuracy)
     disp('Mean accuracies:')
     disp(mean(hit.accuracy,2)) 
+    disp('Mean releveling accuracies: ')
+    mean(hit.ridgeAccuracy,2)
 
 
     % Plot the hit.rate 
@@ -204,19 +214,17 @@ function [results, hit , final, used] = IterativeLasso(X,rowLabels,CV,CV2,numsig
         X.test = X.final(test.indices(:,i) ,:);
         X.train = X.final(train.indices(:,i) ,:);
 
-        opts = glmnetSet();        
-        opts.alpha = 0;        
+        opts_final = glmnetSet();        
+        opts_final.alpha = 0;        
         
         % Fit cvglmnet, in order to find the best lambda
         cvfitFinal = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', CV2.indices', 4);
 
         % Set the lambda value, using the numerical best
-
-        opts.lambda = cvfitFinal.lambda_min;
-
+        opts_final.lambda = cvfitFinal.lambda_1se;
 
         % Fit glmnet 
-        fitFinal = glmnet(X.train, rowLabels.train, 'binomial', opts);
+        fitFinal = glmnet(X.train, rowLabels.train, 'binomial', opts_final);
 
         % Calculating accuracies
         final.prediction(:,i) = (X.test * fitFinal.beta + repmat(fitFinal.a0, [test.size, 1])) > 0 ;  
