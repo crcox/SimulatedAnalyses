@@ -5,7 +5,7 @@
 
 
 %% WARNING: This will clear the work space & variables.
-clear;clc;
+clear;
 w = warning ('off','all'); % Somehow, it returns a lot of warning
 rng(1) % Set the seed (for reproducibility and debugging purpose)
 
@@ -20,7 +20,7 @@ k = 5;
 rowLabels.num = 2;
 
 % Set the strength of the signal & noise
-signal = 1;
+signal = .5;
 noise = 1;
 
 % Set the number of signal-carrying voxel

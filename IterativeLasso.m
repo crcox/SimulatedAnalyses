@@ -204,13 +204,16 @@ function [results, hit , final, used] = IterativeLasso(X,rowLabels,CV,CV2,numsig
         X.test = X.final(test.indices(:,i) ,:);
         X.train = X.final(train.indices(:,i) ,:);
 
+        opts = glmnetSet();        
+        opts.alpha = 0;        
+        
         % Fit cvglmnet, in order to find the best lambda
         cvfitFinal = cvglmnet (X.train, rowLabels.train, 'binomial', 'class', CV2.indices', 4);
 
         % Set the lambda value, using the numerical best
-        opts = glmnetSet();
+
         opts.lambda = cvfitFinal.lambda_min;
-        opts.alpha = 0;
+
 
         % Fit glmnet 
         fitFinal = glmnet(X.train, rowLabels.train, 'binomial', opts);
