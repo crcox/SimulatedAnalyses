@@ -38,5 +38,8 @@ hold off
 
 %% Adding noise 
 
+%% Analysis
+
+
 
 
